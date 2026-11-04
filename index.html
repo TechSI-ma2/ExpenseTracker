@@ -1,11 +1,866 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <title>TechSI-ma2 - Created by Arsalan Nasir</title>
-    <meta http-equiv="refresh" content="0; url=https://techsi-ma2.app.n8n.cloud/webhook/finance">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechSI-ma2 - Created by Arsalan Nasir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+<style>
+  :root { --bg: #07070b; }
+  html, body { background: var(--bg); }
+  body { font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+  [x-cloak] { display: none !important; }
+  .glass { background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(12px); }
+  .glass-strong { background: rgba(18,18,26,0.92); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
+  .hero { background: radial-gradient(120% 140% at 0% 0%, rgba(124,58,237,0.55) 0%, rgba(79,70,229,0.35) 35%, rgba(14,14,22,0.0) 70%), linear-gradient(135deg, #17142b 0%, #0e0e16 100%); border: 1px solid rgba(139,92,246,0.25); }
+  .glow { position: fixed; pointer-events: none; filter: blur(120px); opacity: .35; border-radius: 9999px; }
+  .nav-item.active { background: rgba(139,92,246,0.14); color: #fff; }
+  .nav-item.active svg { color: #a78bfa; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 8px; }
+  input, select, textarea { color-scheme: dark; }
+  .field { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 10px 12px; font-size: 14px; color: #fafafa; outline: none; transition: border-color .15s, box-shadow .15s; }
+  .field:focus { border-color: rgba(139,92,246,0.7); box-shadow: 0 0 0 4px rgba(139,92,246,0.15); }
+  .btn-primary { background: linear-gradient(135deg, #8b5cf6, #6366f1); box-shadow: 0 8px 24px -8px rgba(124,58,237,0.6), inset 0 1px 0 rgba(255,255,255,0.2); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 100%); background-size: 200% 100%; animation: sh 1.4s infinite; }
+  @keyframes sh { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+  .fade-in { animation: fi .35s ease both; }
+  @keyframes fi { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  .bar-track { background: rgba(255,255,255,0.06); }
+</style>
 </head>
-<body>
-    <p>Opening TechSI-ma2… <a href="https://techsi-ma2.app.n8n.cloud/webhook/finance">Click here</a> if nothing happens.</p>
+<body class="h-full text-zinc-100 font-sans" x-data="app()" x-init="init()" @keydown.window="hotkey($event)">
+<div class="glow" style="width:520px;height:520px;background:#7c3aed;top:-200px;left:-120px"></div>
+<div class="glow" style="width:420px;height:420px;background:#0ea5e9;bottom:-220px;right:-120px;opacity:.18"></div>
+
+<div class="relative flex h-full">
+  <!-- Sidebar -->
+  <aside class="hidden lg:flex w-64 shrink-0 flex-col border-r border-white/5 bg-black/20 px-4 py-6">
+    <div class="flex items-center gap-3 px-2 mb-8">
+      <div class="h-9 w-9 rounded-xl btn-primary grid place-items-center font-extrabold">T</div>
+      <div>
+        <div class="font-semibold tracking-tight">TechSI-ma2</div>
+        <div class="text-[11px] text-zinc-500">Created by Arsalan Nasir</div>
+      </div>
+    </div>
+    <nav class="space-y-1">
+      <template x-for="n in nav" :key="n.id">
+        <button @click="go(n.id)" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition" :class="view===n.id && 'active'">
+          <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" x-html="n.icon"></svg>
+          <span x-text="n.label"></span>
+          <span x-show="n.id==='budgets' && overBudgetCount>0" class="ml-auto text-[10px] font-semibold bg-rose-500/20 text-rose-300 rounded-full px-2 py-0.5" x-text="overBudgetCount"></span>
+        </button>
+      </template>
+    </nav>
+    <div class="mt-auto glass rounded-2xl p-4">
+      <div class="text-xs text-zinc-400">Savings rate this month</div>
+      <div class="mt-1 text-2xl font-bold num" :class="savingsRate(selectedMonth)>=20?'text-emerald-400':'text-amber-300'" x-text="pct(savingsRate(selectedMonth))"></div>
+      <div class="mt-3 h-1.5 rounded-full bar-track overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-400" :style="'width:'+Math.max(0,Math.min(100,savingsRate(selectedMonth)))+'%'"></div></div>
+      <div class="mt-2 text-[11px] text-zinc-500">Target: 20% or more</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0 overflow-y-auto">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-30 border-b border-white/5 bg-[#07070b]/80 backdrop-blur-xl">
+      <div class="flex items-center gap-3 px-4 sm:px-8 h-16">
+        <div class="lg:hidden h-8 w-8 rounded-lg btn-primary grid place-items-center font-extrabold text-sm">T</div>
+        <div>
+          <h1 class="text-lg font-semibold tracking-tight" x-text="nav.find(n=>n.id===view).label"></h1>
+          <p class="hidden sm:block text-xs text-zinc-500" x-text="greeting()"></p>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <div class="hidden md:flex items-center glass rounded-xl px-1 py-1">
+            <button @click="shiftMonth(-1)" class="h-8 w-8 rounded-lg hover:bg-white/5 grid place-items-center text-zinc-400">&#8249;</button>
+            <div class="px-2 text-sm font-medium w-32 text-center" x-text="monthLabel(selectedMonth)"></div>
+            <button @click="shiftMonth(1)" class="h-8 w-8 rounded-lg hover:bg-white/5 grid place-items-center text-zinc-400">&#8250;</button>
+          </div>
+          <button @click="openTxn()" class="btn-primary rounded-xl px-4 h-10 text-sm font-semibold flex items-center gap-2">
+            <span class="text-lg leading-none">+</span><span class="hidden sm:inline">Add transaction</span>
+          </button>
+        </div>
+      </div>
+      <!-- mobile nav -->
+      <div class="lg:hidden flex gap-1 overflow-x-auto px-4 pb-3">
+        <template x-for="n in nav" :key="n.id">
+          <button @click="go(n.id)" class="shrink-0 rounded-lg px-3 py-1.5 text-xs" :class="view===n.id?'bg-violet-500/20 text-white':'text-zinc-400 bg-white/5'" x-text="n.label"></button>
+        </template>
+      </div>
+    </header>
+
+    <div class="px-4 sm:px-8 py-6 max-w-[1400px] mx-auto">
+
+      <!-- Loading -->
+      <div x-show="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="skeleton h-40 rounded-3xl md:col-span-2"></div><div class="skeleton h-40 rounded-3xl"></div><div class="skeleton h-40 rounded-3xl"></div>
+        <div class="skeleton h-80 rounded-3xl md:col-span-3"></div><div class="skeleton h-80 rounded-3xl"></div>
+      </div>
+
+      <!-- Error -->
+      <div x-show="error && !loading" x-cloak class="glass rounded-2xl p-6 border-rose-500/30">
+        <div class="font-semibold text-rose-300">Could not reach your data</div>
+        <p class="text-sm text-zinc-400 mt-1" x-text="error"></p>
+        <button @click="load()" class="mt-4 rounded-lg bg-white/10 px-4 py-2 text-sm">Retry</button>
+      </div>
+
+      <!-- Empty state -->
+      <div x-show="!loading && !error && txns.length===0 && view==='overview'" x-cloak class="hero rounded-3xl p-10 text-center fade-in">
+        <div class="mx-auto h-14 w-14 rounded-2xl btn-primary grid place-items-center text-2xl font-bold">L</div>
+        <h2 class="mt-5 text-2xl font-bold tracking-tight">Welcome to TechSI-ma2</h2>
+        <p class="mt-2 text-zinc-400 max-w-md mx-auto">Track income and spending, set budgets, and get clear insights. Add your first transaction, import a CSV, or explore with sample data.</p>
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+          <button @click="openTxn()" class="btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold">Add first transaction</button>
+          <button @click="seedDemo()" class="rounded-xl bg-white/10 hover:bg-white/15 px-5 py-2.5 text-sm font-semibold" :disabled="saving" x-text="saving?'Loading sample data…':'Load sample data'"></button>
+          <button @click="go('transactions')" class="rounded-xl bg-white/5 hover:bg-white/10 px-5 py-2.5 text-sm">Import CSV</button>
+        </div>
+      </div>
+
+      <!-- ================= OVERVIEW ================= -->
+      <section x-show="!loading && !error && view==='overview' && txns.length>0" x-cloak class="space-y-5 fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="hero rounded-3xl p-6 md:col-span-2 relative overflow-hidden">
+            <div class="text-sm text-violet-200/80">Total balance</div>
+            <div class="mt-2 text-4xl sm:text-5xl font-bold num" x-text="money(balance)"></div>
+            <div class="mt-3 flex items-center gap-2 text-sm">
+              <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="net(selectedMonth)>=0?'bg-emerald-400/15 text-emerald-300':'bg-rose-400/15 text-rose-300'" x-text="(net(selectedMonth)>=0?'+':'')+money(net(selectedMonth))"></span>
+              <span class="text-zinc-400">net in <span x-text="monthLabel(selectedMonth)"></span></span>
+            </div>
+            <div class="mt-6 grid grid-cols-3 gap-3 max-w-md">
+              <div><div class="text-[11px] uppercase tracking-wider text-zinc-400">Avg monthly spend</div><div class="font-semibold num" x-text="money(avgSpend(3))"></div></div>
+              <div><div class="text-[11px] uppercase tracking-wider text-zinc-400">Transactions</div><div class="font-semibold num" x-text="monthTxns(selectedMonth).length"></div></div>
+              <div><div class="text-[11px] uppercase tracking-wider text-zinc-400">Runway</div><div class="font-semibold num" x-text="runway()"></div></div>
+            </div>
+            <svg class="absolute right-0 bottom-0 h-32 w-64 opacity-60" viewBox="0 0 200 80" preserveAspectRatio="none"><path :d="sparkPath()" fill="none" stroke="url(#sg)" stroke-width="2.5"/><defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="#a78bfa" stop-opacity="0"/><stop offset="1" stop-color="#c4b5fd"/></linearGradient></defs></svg>
+          </div>
+          <div class="glass rounded-3xl p-6">
+            <div class="flex items-center justify-between"><div class="text-sm text-zinc-400">Income</div><div class="h-8 w-8 rounded-lg bg-emerald-400/10 text-emerald-400 grid place-items-center">&#8599;</div></div>
+            <div class="mt-3 text-3xl font-bold num" x-text="money(income(selectedMonth))"></div>
+            <div class="mt-2 text-xs" :class="delta(income(selectedMonth),income(prevMonth(selectedMonth)))>=0?'text-emerald-400':'text-rose-400'" x-text="deltaText(income(selectedMonth),income(prevMonth(selectedMonth)))"></div>
+          </div>
+          <div class="glass rounded-3xl p-6">
+            <div class="flex items-center justify-between"><div class="text-sm text-zinc-400">Spending</div><div class="h-8 w-8 rounded-lg bg-rose-400/10 text-rose-400 grid place-items-center">&#8600;</div></div>
+            <div class="mt-3 text-3xl font-bold num" x-text="money(expense(selectedMonth))"></div>
+            <div class="mt-2 text-xs" :class="delta(expense(selectedMonth),expense(prevMonth(selectedMonth)))<=0?'text-emerald-400':'text-rose-400'" x-text="deltaText(expense(selectedMonth),expense(prevMonth(selectedMonth)))"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div class="glass rounded-3xl p-6 xl:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+              <div><div class="font-semibold">Cash flow</div><div class="text-xs text-zinc-500">Income vs spending, last 6 months</div></div>
+              <div class="flex gap-3 text-xs text-zinc-400"><span class="flex items-center gap-1.5"><i class="h-2 w-2 rounded-full bg-emerald-400"></i>Income</span><span class="flex items-center gap-1.5"><i class="h-2 w-2 rounded-full bg-violet-500"></i>Spending</span></div>
+            </div>
+            <div class="h-72"><canvas id="cashflowChart"></canvas></div>
+          </div>
+          <div class="glass rounded-3xl p-6">
+            <div class="font-semibold">Where it went</div>
+            <div class="text-xs text-zinc-500 mb-4" x-text="monthLabel(selectedMonth)"></div>
+            <div class="relative h-48"><canvas id="donutChart"></canvas>
+              <div class="absolute inset-0 grid place-items-center pointer-events-none"><div class="text-center"><div class="text-[11px] text-zinc-500">Spent</div><div class="font-bold num" x-text="money(expense(selectedMonth))"></div></div></div>
+            </div>
+            <div class="mt-4 space-y-2">
+              <template x-for="c in catBreakdown(selectedMonth).slice(0,5)" :key="c.name">
+                <div class="flex items-center gap-3 text-sm">
+                  <i class="h-2.5 w-2.5 rounded-full" :style="'background:'+catColor(c.name)"></i>
+                  <span class="text-zinc-300" x-text="c.name"></span>
+                  <span class="ml-auto num text-zinc-400" x-text="pct(c.share)"></span>
+                  <span class="num font-medium w-24 text-right" x-text="money(c.total)"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div class="glass rounded-3xl p-6 xl:col-span-2">
+            <div class="flex items-center justify-between mb-3"><div class="font-semibold">Recent activity</div><button @click="go('transactions')" class="text-xs text-violet-300 hover:text-violet-200">View all</button></div>
+            <div class="divide-y divide-white/5">
+              <template x-for="t in sortedTxns.slice(0,7)" :key="t.id">
+                <div class="flex items-center gap-3 py-3 cursor-pointer hover:bg-white/[0.02] rounded-xl px-2 -mx-2" @click="openTxn(t)">
+                  <div class="h-10 w-10 rounded-xl grid place-items-center text-xs font-bold" :style="catBadge(t)" x-text="initials(t.category)"></div>
+                  <div class="min-w-0"><div class="text-sm font-medium truncate" x-text="t.description"></div><div class="text-xs text-zinc-500" x-text="t.category+' · '+dateLabel(t.txn_date)"></div></div>
+                  <div class="ml-auto text-sm font-semibold num" :class="t.txn_type==='income'?'text-emerald-400':''" x-text="(t.txn_type==='income'?'+':'−')+money(t.amount)"></div>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="glass rounded-3xl p-6">
+              <div class="flex items-center justify-between mb-3"><div class="font-semibold">Budget health</div><button @click="go('budgets')" class="text-xs text-violet-300">Manage</button></div>
+              <div x-show="budgetRows.length===0" class="text-sm text-zinc-500">No budgets yet. <button class="text-violet-300" @click="openBudget()">Create one</button></div>
+              <div class="space-y-3">
+                <template x-for="b in budgetRows.slice(0,4)" :key="b.id">
+                  <div>
+                    <div class="flex justify-between text-sm"><span x-text="b.category"></span><span class="num text-zinc-400"><span x-text="money(b.spent)"></span> / <span x-text="money(b.monthly_limit)"></span></span></div>
+                    <div class="mt-1.5 h-2 rounded-full bar-track overflow-hidden"><div class="h-full rounded-full transition-all" :class="barColor(b.pct)" :style="'width:'+Math.min(100,b.pct)+'%'"></div></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold mb-3">Insights</div>
+              <div class="space-y-3">
+                <template x-for="i in insights.slice(0,3)" :key="i.title">
+                  <div class="flex gap-3">
+                    <div class="mt-1 h-2 w-2 shrink-0 rounded-full" :class="toneDot(i.tone)"></div>
+                    <div><div class="text-sm font-medium" x-text="i.title"></div><div class="text-xs text-zinc-400 mt-0.5" x-text="i.body"></div></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TRANSACTIONS ================= -->
+      <section x-show="!loading && !error && view==='transactions'" x-cloak class="space-y-4 fade-in">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="glass rounded-2xl p-5"><div class="text-xs text-zinc-500">Filtered income</div><div class="mt-1 text-2xl font-bold num text-emerald-400" x-text="money(filteredTotals.income)"></div></div>
+          <div class="glass rounded-2xl p-5"><div class="text-xs text-zinc-500">Filtered spending</div><div class="mt-1 text-2xl font-bold num" x-text="money(filteredTotals.expense)"></div></div>
+          <div class="glass rounded-2xl p-5"><div class="text-xs text-zinc-500">Net</div><div class="mt-1 text-2xl font-bold num" :class="filteredTotals.net>=0?'text-emerald-400':'text-rose-400'" x-text="money(filteredTotals.net)"></div></div>
+        </div>
+        <div class="glass rounded-2xl p-4 flex flex-wrap items-center gap-3">
+          <div class="relative flex-1 min-w-[200px]">
+            <input x-model="f.q" class="field pl-9" placeholder="Search description, notes, category…">
+            <svg class="absolute left-3 top-3 h-4 w-4 text-zinc-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <select x-model="f.type" class="field !w-auto"><option value="">All types</option><option value="expense">Expenses</option><option value="income">Income</option></select>
+          <select x-model="f.cat" class="field !w-auto"><option value="">All categories</option><template x-for="c in allCategories" :key="c"><option :value="c" x-text="c"></option></template></select>
+          <select x-model="f.period" class="field !w-auto"><option value="month">Selected month</option><option value="3m">Last 3 months</option><option value="12m">Last 12 months</option><option value="all">All time</option></select>
+          <button @click="exportCsv()" class="rounded-xl bg-white/5 hover:bg-white/10 px-3 h-10 text-sm">Export CSV</button>
+          <label class="rounded-xl bg-white/5 hover:bg-white/10 px-3 h-10 text-sm grid place-items-center cursor-pointer">Import CSV<input type="file" accept=".csv,text/csv" class="hidden" @change="importCsv($event)"></label>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden">
+          <div x-show="filteredTxns.length===0" class="p-10 text-center text-zinc-500 text-sm">No transactions match these filters.</div>
+          <template x-for="g in groupedTxns" :key="g.date">
+            <div>
+              <div class="flex justify-between px-5 py-2 text-[11px] uppercase tracking-wider text-zinc-500 bg-white/[0.02] border-y border-white/5"><span x-text="dateLabel(g.date, true)"></span><span class="num" x-text="(g.net>=0?'+':'')+money(g.net)"></span></div>
+              <template x-for="t in g.items" :key="t.id">
+                <div class="group flex items-center gap-4 px-5 py-3 hover:bg-white/[0.025]">
+                  <div class="h-10 w-10 rounded-xl grid place-items-center text-xs font-bold shrink-0" :style="catBadge(t)" x-text="initials(t.category)"></div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium truncate flex items-center gap-2"><span x-text="t.description"></span><span x-show="t.recurring" class="text-[10px] rounded-full bg-sky-400/10 text-sky-300 px-2 py-0.5">Recurring</span></div>
+                    <div class="text-xs text-zinc-500 truncate" x-text="t.category+' · '+t.account+(t.notes?' · '+t.notes:'')"></div>
+                  </div>
+                  <div class="text-sm font-semibold num" :class="t.txn_type==='income'?'text-emerald-400':''" x-text="(t.txn_type==='income'?'+':'−')+money(t.amount)"></div>
+                  <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <button @click="openTxn(t)" class="h-8 px-2 rounded-lg hover:bg-white/10 text-xs text-zinc-300">Edit</button>
+                    <button @click="delTxn(t)" class="h-8 px-2 rounded-lg hover:bg-rose-500/15 text-xs text-rose-300">Delete</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+        <p class="text-xs text-zinc-500">CSV import columns: date (YYYY-MM-DD), description, amount, category, type (income/expense). Negative amounts are read as expenses.</p>
+      </section>
+
+      <!-- ================= BUDGETS ================= -->
+      <section x-show="!loading && !error && view==='budgets'" x-cloak class="space-y-5 fade-in">
+        <div class="hero rounded-3xl p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+          <div class="md:col-span-2">
+            <div class="text-sm text-violet-200/80">Budgeted for <span x-text="monthLabel(selectedMonth)"></span></div>
+            <div class="mt-1 text-4xl font-bold num"><span x-text="money(budgetTotals.spent)"></span><span class="text-xl text-zinc-400 font-semibold"> / <span x-text="money(budgetTotals.limit)"></span></span></div>
+            <div class="mt-4 h-3 rounded-full bg-white/10 overflow-hidden"><div class="h-full rounded-full" :class="barColor(budgetTotals.pct)" :style="'width:'+Math.min(100,budgetTotals.pct)+'%'"></div></div>
+          </div>
+          <div><div class="text-xs text-zinc-400">Left to spend</div><div class="text-2xl font-bold num" :class="budgetTotals.limit-budgetTotals.spent<0?'text-rose-300':'text-emerald-300'" x-text="money(budgetTotals.limit-budgetTotals.spent)"></div></div>
+          <div class="flex md:justify-end"><button @click="openBudget()" class="btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold">+ New budget</button></div>
+        </div>
+        <div x-show="budgetRows.length===0" class="glass rounded-2xl p-10 text-center text-zinc-400 text-sm">Set a monthly limit for a category to start tracking.</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <template x-for="b in budgetRows" :key="b.id">
+            <div class="glass rounded-3xl p-6">
+              <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-xl grid place-items-center text-xs font-bold" :style="catBadge({category:b.category,txn_type:'expense'})" x-text="initials(b.category)"></div>
+                <div><div class="font-semibold" x-text="b.category"></div><div class="text-xs text-zinc-500" x-text="money(b.monthly_limit)+' / month'"></div></div>
+                <div class="ml-auto relative h-14 w-14">
+                  <svg viewBox="0 0 36 36" class="h-14 w-14 -rotate-90"><circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="3.5"/><circle cx="18" cy="18" r="15.5" fill="none" :stroke="ringColor(b.pct)" stroke-width="3.5" stroke-linecap="round" :stroke-dasharray="(Math.min(100,b.pct)*0.974)+' 100'"/></svg>
+                  <div class="absolute inset-0 grid place-items-center text-[11px] font-semibold num" x-text="Math.round(b.pct)+'%'"></div>
+                </div>
+              </div>
+              <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
+                <div><div class="text-xs text-zinc-500">Spent</div><div class="font-semibold num" x-text="money(b.spent)"></div></div>
+                <div><div class="text-xs text-zinc-500" x-text="b.remaining>=0?'Remaining':'Over by'"></div><div class="font-semibold num" :class="b.remaining<0?'text-rose-300':'text-emerald-300'" x-text="money(Math.abs(b.remaining))"></div></div>
+                <div><div class="text-xs text-zinc-500">Daily allowance</div><div class="font-semibold num" x-text="b.daily===null?'—':money(b.daily)"></div></div>
+                <div><div class="text-xs text-zinc-500">Projected</div><div class="font-semibold num" :class="b.projected>b.monthly_limit?'text-amber-300':''" x-text="money(b.projected)"></div></div>
+              </div>
+              <div class="mt-4 text-xs rounded-xl px-3 py-2" :class="b.statusClass" x-text="b.status"></div>
+              <div class="mt-4 flex gap-2">
+                <button @click="openBudget(b)" class="flex-1 rounded-lg bg-white/5 hover:bg-white/10 py-2 text-xs">Edit</button>
+                <button @click="delBudget(b)" class="rounded-lg hover:bg-rose-500/15 text-rose-300 px-3 py-2 text-xs">Delete</button>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div x-show="unbudgeted.length>0" class="glass rounded-2xl p-5">
+          <div class="text-sm font-semibold">Spending without a budget this month</div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <template x-for="u in unbudgeted" :key="u.name">
+              <button @click="openBudget({category:u.name, monthly_limit: Math.ceil(u.total/50)*50})" class="rounded-full bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs"><span x-text="u.name"></span> · <span class="num" x-text="money(u.total)"></span> <span class="text-violet-300">+ budget</span></button>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= INSIGHTS ================= -->
+      <section x-show="!loading && !error && view==='insights'" x-cloak class="space-y-5 fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <template x-for="i in insights" :key="i.title">
+            <div class="glass rounded-2xl p-5 border-l-2" :class="toneBorder(i.tone)">
+              <div class="text-[11px] uppercase tracking-wider" :class="toneText(i.tone)" x-text="i.tag"></div>
+              <div class="mt-1 font-semibold" x-text="i.title"></div>
+              <div class="mt-1 text-sm text-zinc-400" x-text="i.body"></div>
+            </div>
+          </template>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div class="glass rounded-3xl p-6 xl:col-span-2">
+            <div class="font-semibold">Net savings trend</div><div class="text-xs text-zinc-500 mb-4">Monthly income minus spending, last 12 months</div>
+            <div class="h-64"><canvas id="trendChart"></canvas></div>
+          </div>
+          <div class="glass rounded-3xl p-6">
+            <div class="font-semibold">Spending by weekday</div><div class="text-xs text-zinc-500 mb-4">Average per day, last 90 days</div>
+            <div class="h-64"><canvas id="weekdayChart"></canvas></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="glass rounded-3xl p-6">
+            <div class="font-semibold">Category changes</div><div class="text-xs text-zinc-500 mb-4"><span x-text="monthLabel(selectedMonth)"></span> vs 3-month average</div>
+            <div class="space-y-3">
+              <template x-for="c in categoryChanges" :key="c.name">
+                <div class="flex items-center gap-3 text-sm">
+                  <span class="w-28 truncate text-zinc-300" x-text="c.name"></span>
+                  <div class="flex-1 h-2 rounded-full bar-track overflow-hidden"><div class="h-full rounded-full" :style="'width:'+c.bar+'%;background:'+catColor(c.name)"></div></div>
+                  <span class="w-20 text-right num" x-text="money(c.now)"></span>
+                  <span class="w-16 text-right text-xs num" :class="c.change>10?'text-rose-400':(c.change<-10?'text-emerald-400':'text-zinc-500')" x-text="c.avg>0?((c.change>0?'+':'')+Math.round(c.change)+'%'):'new'"></span>
+                </div>
+              </template>
+              <div x-show="categoryChanges.length===0" class="text-sm text-zinc-500">No spending yet this month.</div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="glass rounded-3xl p-6">
+              <div class="flex justify-between"><div class="font-semibold">Recurring & subscriptions</div><div class="text-sm num text-zinc-300"><span x-text="money(recurring.reduce((s,r)=>s+r.amount,0))"></span>/mo</div></div>
+              <div class="mt-3 divide-y divide-white/5">
+                <template x-for="r in recurring.slice(0,6)" :key="r.name">
+                  <div class="flex items-center py-2.5 text-sm"><span x-text="r.name"></span><span class="ml-2 text-xs text-zinc-500" x-text="r.category"></span><span class="ml-auto num" x-text="money(r.amount)"></span></div>
+                </template>
+                <div x-show="recurring.length===0" class="text-sm text-zinc-500 py-2">No recurring charges detected yet.</div>
+              </div>
+            </div>
+            <div class="glass rounded-3xl p-6">
+              <div class="font-semibold">Top merchants</div><div class="text-xs text-zinc-500 mb-3">Last 90 days</div>
+              <template x-for="(m, idx) in topMerchants" :key="m.name">
+                <div class="flex items-center gap-3 py-2 text-sm"><span class="w-5 text-zinc-500 num" x-text="idx+1"></span><span class="truncate" x-text="m.name"></span><span class="text-xs text-zinc-500" x-text="m.count+'×'"></span><span class="ml-auto num font-medium" x-text="money(m.total)"></span></div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= GOALS ================= -->
+      <section x-show="!loading && !error && view==='goals'" x-cloak class="space-y-5 fade-in">
+        <div class="flex items-center justify-between">
+          <div><div class="text-sm text-zinc-400">Saved toward goals</div><div class="text-3xl font-bold num"><span x-text="money(goals.reduce((s,g)=>s+Number(g.saved_amount||0),0))"></span><span class="text-lg text-zinc-500"> / <span x-text="money(goals.reduce((s,g)=>s+Number(g.target_amount||0),0))"></span></span></div></div>
+          <button @click="openGoal()" class="btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold">+ New goal</button>
+        </div>
+        <div x-show="goals.length===0" class="glass rounded-2xl p-10 text-center text-zinc-400 text-sm">Create a savings goal, like an emergency fund or a trip.</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <template x-for="g in goals" :key="g.id">
+            <div class="glass rounded-3xl p-6 relative overflow-hidden">
+              <div class="absolute -top-16 -right-16 h-40 w-40 rounded-full opacity-25 blur-2xl" :style="'background:'+g.color"></div>
+              <div class="flex items-center justify-between relative">
+                <div class="font-semibold" x-text="g.goal_name"></div>
+                <div class="text-xs text-zinc-400" x-text="g.target_date?('by '+dateLabel(g.target_date)):'No deadline'"></div>
+              </div>
+              <div class="mt-4 text-3xl font-bold num relative" x-text="money(g.saved_amount)"></div>
+              <div class="text-xs text-zinc-500">of <span x-text="money(g.target_amount)"></span></div>
+              <div class="mt-4 h-2.5 rounded-full bar-track overflow-hidden"><div class="h-full rounded-full" :style="'width:'+goalPct(g)+'%;background:'+g.color"></div></div>
+              <div class="mt-2 flex justify-between text-xs text-zinc-400"><span x-text="Math.round(goalPct(g))+'% complete'"></span><span x-text="goalPace(g)"></span></div>
+              <div class="mt-5 flex gap-2">
+                <button @click="openContrib(g)" class="flex-1 rounded-lg bg-white/10 hover:bg-white/15 py-2 text-xs font-semibold">Add money</button>
+                <button @click="openGoal(g)" class="rounded-lg bg-white/5 hover:bg-white/10 px-3 py-2 text-xs">Edit</button>
+                <button @click="delGoal(g)" class="rounded-lg hover:bg-rose-500/15 text-rose-300 px-3 py-2 text-xs">Delete</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- ================= SETTINGS ================= -->
+      <section x-show="!loading && !error && view==='settings'" x-cloak class="space-y-4 max-w-2xl fade-in">
+        <div class="glass rounded-2xl p-6">
+          <div class="font-semibold">Display currency</div>
+          <p class="text-sm text-zinc-500 mt-1">Amounts are stored as numbers. This changes how they are shown.</p>
+          <select x-model="currency" @change="store.set('ledger_currency', currency); renderCharts()" class="field mt-3 !w-48">
+            <template x-for="c in ['USD','EUR','GBP','CAD','AUD','JPY','CHF','INR','MAD','BRL']" :key="c"><option :value="c" x-text="c"></option></template>
+          </select>
+        </div>
+        <div class="glass rounded-2xl p-6">
+          <div class="font-semibold">Sample data</div>
+          <p class="text-sm text-zinc-500 mt-1">Adds six months of realistic transactions, budgets, and goals so you can explore every view.</p>
+          <button @click="seedDemo()" :disabled="saving" class="mt-3 rounded-xl bg-white/10 hover:bg-white/15 px-4 py-2 text-sm" x-text="saving?'Working…':'Load sample data'"></button>
+        </div>
+        <div class="glass rounded-2xl p-6 border-rose-500/20">
+          <div class="font-semibold text-rose-300">Danger zone</div>
+          <p class="text-sm text-zinc-500 mt-1">Permanently delete every transaction. Budgets and goals stay.</p>
+          <button @click="clearAll()" :disabled="saving" class="mt-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 px-4 py-2 text-sm">Delete all transactions</button>
+        </div>
+        <div class="text-xs text-zinc-600">Keyboard: press <kbd class="px-1.5 py-0.5 rounded bg-white/10">N</kbd> to add a transaction, <kbd class="px-1.5 py-0.5 rounded bg-white/10">Esc</kbd> to close dialogs.</div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div x-show="modal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6" @keydown.escape.window="modal=null">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modal=null"></div>
+
+  <!-- Transaction -->
+  <form x-show="modal==='txn'" @submit.prevent="saveTxn()" class="relative glass-strong w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 fade-in">
+    <div class="flex items-center justify-between"><h3 class="text-lg font-semibold" x-text="form.id?'Edit transaction':'New transaction'"></h3><button type="button" @click="modal=null" class="text-zinc-500 hover:text-white text-xl">&times;</button></div>
+    <div class="mt-5 grid grid-cols-2 gap-1 p-1 rounded-xl bg-white/5">
+      <button type="button" @click="form.txn_type='expense'; form.category=expenseCats[0]" class="rounded-lg py-2 text-sm font-medium" :class="form.txn_type==='expense'?'bg-white/10 text-white':'text-zinc-400'">Expense</button>
+      <button type="button" @click="form.txn_type='income'; form.category=incomeCats[0]" class="rounded-lg py-2 text-sm font-medium" :class="form.txn_type==='income'?'bg-emerald-500/20 text-emerald-200':'text-zinc-400'">Income</button>
+    </div>
+    <div class="mt-5 text-center">
+      <input x-model="form.amount" type="number" step="0.01" min="0.01" required placeholder="0.00" class="w-full bg-transparent text-center text-5xl font-bold num outline-none placeholder:text-zinc-700">
+      <div class="text-xs text-zinc-500 mt-1" x-text="currency"></div>
+    </div>
+    <div class="mt-5 space-y-3">
+      <input x-model="form.description" required maxlength="200" class="field" placeholder="Description (e.g. Whole Foods)">
+      <div class="grid grid-cols-2 gap-3">
+        <select x-model="form.category" class="field"><template x-for="c in (form.txn_type==='income'?incomeCats:expenseCats)" :key="c"><option :value="c" x-text="c" :selected="c===form.category"></option></template></select>
+        <input x-model="form.txn_date" type="date" required class="field">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <select x-model="form.account" class="field"><template x-for="a in accounts" :key="a"><option :value="a" x-text="a" :selected="a===form.account"></option></template></select>
+        <label class="field flex items-center gap-2 cursor-pointer"><input type="checkbox" x-model="form.recurring" class="accent-violet-500"> <span class="text-sm text-zinc-300">Recurring</span></label>
+      </div>
+      <input x-model="form.notes" maxlength="500" class="field" placeholder="Notes (optional)">
+    </div>
+    <div class="mt-6 flex gap-3">
+      <button type="button" x-show="form.id" @click="delTxn(form)" class="rounded-xl px-4 py-2.5 text-sm text-rose-300 hover:bg-rose-500/10">Delete</button>
+      <button type="submit" :disabled="saving" class="ml-auto btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold" x-text="saving?'Saving…':'Save'"></button>
+    </div>
+  </form>
+
+  <!-- Budget -->
+  <form x-show="modal==='budget'" @submit.prevent="saveBudget()" class="relative glass-strong w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 fade-in">
+    <div class="flex items-center justify-between"><h3 class="text-lg font-semibold" x-text="form.id?'Edit budget':'New budget'"></h3><button type="button" @click="modal=null" class="text-zinc-500 hover:text-white text-xl">&times;</button></div>
+    <div class="mt-5 space-y-3">
+      <label class="text-xs text-zinc-400">Category</label>
+      <select x-model="form.category" class="field" :disabled="!!form.id"><template x-for="c in expenseCats" :key="c"><option :value="c" x-text="c" :selected="c===form.category"></option></template></select>
+      <label class="text-xs text-zinc-400 block pt-2">Monthly limit</label>
+      <input x-model="form.monthly_limit" type="number" min="1" step="1" required class="field num" placeholder="500">
+      <div class="text-xs text-zinc-500" x-show="form.category">3-month average spend: <span class="num text-zinc-300" x-text="money(catAvg(form.category,3))"></span></div>
+    </div>
+    <div class="mt-6 flex"><button type="submit" :disabled="saving" class="ml-auto btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold" x-text="saving?'Saving…':'Save budget'"></button></div>
+  </form>
+
+  <!-- Goal -->
+  <form x-show="modal==='goal'" @submit.prevent="saveGoal()" class="relative glass-strong w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 fade-in">
+    <div class="flex items-center justify-between"><h3 class="text-lg font-semibold" x-text="form.id?'Edit goal':'New goal'"></h3><button type="button" @click="modal=null" class="text-zinc-500 hover:text-white text-xl">&times;</button></div>
+    <div class="mt-5 space-y-3">
+      <input x-model="form.goal_name" required maxlength="100" class="field" placeholder="Goal name (e.g. Emergency fund)">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-zinc-400">Target</label><input x-model="form.target_amount" type="number" min="1" step="0.01" required class="field num mt-1"></div>
+        <div><label class="text-xs text-zinc-400">Saved so far</label><input x-model="form.saved_amount" type="number" min="0" step="0.01" class="field num mt-1"></div>
+      </div>
+      <div><label class="text-xs text-zinc-400">Target date (optional)</label><input x-model="form.target_date" type="date" class="field mt-1"></div>
+      <div class="flex gap-2 pt-1">
+        <template x-for="c in goalColors" :key="c"><button type="button" @click="form.color=c" class="h-7 w-7 rounded-full ring-2 ring-offset-2 ring-offset-[#12121a]" :class="form.color===c?'ring-white':'ring-transparent'" :style="'background:'+c"></button></template>
+      </div>
+    </div>
+    <div class="mt-6 flex"><button type="submit" :disabled="saving" class="ml-auto btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold" x-text="saving?'Saving…':'Save goal'"></button></div>
+  </form>
+
+  <!-- Contribution -->
+  <form x-show="modal==='contrib'" @submit.prevent="saveContrib()" class="relative glass-strong w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 fade-in">
+    <h3 class="text-lg font-semibold">Add to <span x-text="form.goal_name"></span></h3>
+    <input x-model="form.contrib" type="number" step="0.01" required class="mt-5 w-full bg-transparent text-center text-4xl font-bold num outline-none" placeholder="0.00">
+    <p class="text-xs text-center text-zinc-500 mt-2">Use a negative number to withdraw.</p>
+    <div class="mt-6 flex"><button type="submit" :disabled="saving" class="ml-auto btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">Add</button></div>
+  </form>
+</div>
+
+<!-- Toast -->
+<div x-show="toast.show" x-cloak x-transition class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] glass-strong rounded-xl px-4 py-3 text-sm shadow-2xl flex items-center gap-2">
+  <span class="h-2 w-2 rounded-full" :class="toast.err?'bg-rose-400':'bg-emerald-400'"></span><span x-text="toast.msg"></span>
+</div>
+
+<script>
+// Absolute address so this page works both on n8n and when hosted elsewhere (e.g. GitHub Pages)
+const API = 'https://techsi-ma2.app.n8n.cloud/webhook/finance/api';
+const store = { get(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} } };
+const CAT_COLORS = { Housing:'#8b5cf6', Groceries:'#22c55e', Dining:'#f97316', Transport:'#0ea5e9', Shopping:'#ec4899', Utilities:'#eab308', Entertainment:'#a855f7', Health:'#14b8a6', Travel:'#06b6d4', Subscriptions:'#6366f1', Education:'#84cc16', 'Personal Care':'#f43f5e', Other:'#71717a', Salary:'#10b981', Freelance:'#34d399', Investments:'#2dd4bf', Gifts:'#fbbf24', 'Other Income':'#a3e635' };
+const ICONS = {
+  overview: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  transactions: '<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
+  budgets: '<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+  insights: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
+  goals: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
+};
+const charts = {};
+const pad = (n) => String(n).padStart(2, '0');
+const ymd = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const todayStr = () => ymd(new Date());
+const curMonth = () => todayStr().slice(0, 7);
+
+function app() {
+  return {
+    view: 'overview', loading: true, error: '', saving: false, modal: null, form: {},
+    txns: [], budgets: [], goals: [],
+    selectedMonth: curMonth(),
+    currency: store.get('ledger_currency') || 'USD',
+    f: { q: '', type: '', cat: '', period: 'month' },
+    toast: { show: false, msg: '', err: false },
+    expenseCats: ['Housing','Groceries','Dining','Transport','Shopping','Utilities','Entertainment','Health','Travel','Subscriptions','Education','Personal Care','Other'],
+    incomeCats: ['Salary','Freelance','Investments','Gifts','Other Income'],
+    accounts: ['Main account','Credit card','Savings','Cash'],
+    goalColors: ['#8b5cf6','#10b981','#0ea5e9','#f97316','#ec4899','#eab308'],
+    nav: [
+      { id: 'overview', label: 'Overview', icon: ICONS.overview },
+      { id: 'transactions', label: 'Transactions', icon: ICONS.transactions },
+      { id: 'budgets', label: 'Budgets', icon: ICONS.budgets },
+      { id: 'insights', label: 'Insights', icon: ICONS.insights },
+      { id: 'goals', label: 'Goals', icon: ICONS.goals },
+      { id: 'settings', label: 'Settings', icon: ICONS.settings },
+    ],
+
+    async init() {
+      const h = location.hash.replace('#', '');
+      if (this.nav.some(n => n.id === h)) this.view = h;
+      await this.load();
+      this.$watch('selectedMonth', () => this.renderCharts());
+    },
+    async load() {
+      this.loading = true; this.error = '';
+      try {
+        const r = await fetch(API + '/state', { cache: 'no-store' });
+        if (!r.ok) throw new Error('Server responded ' + r.status + '. Make sure the workflow is published.');
+        const d = await r.json();
+        this.txns = (d.transactions || []).map(t => ({ ...t, amount: Number(t.amount) || 0, recurring: t.recurring === true || t.recurring === 'true' }));
+        this.budgets = (d.budgets || []).map(b => ({ ...b, monthly_limit: Number(b.monthly_limit) || 0 }));
+        this.goals = (d.goals || []).map(g => ({ ...g, target_amount: Number(g.target_amount) || 0, saved_amount: Number(g.saved_amount) || 0, color: g.color || '#8b5cf6' }));
+      } catch (e) { this.error = e.message || String(e); }
+      this.loading = false;
+      this.$nextTick(() => this.renderCharts());
+    },
+    async mutate(entity, op, data, id) {
+      this.saving = true;
+      try {
+        const r = await fetch(API + '/mutate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entity, op, data, id }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.ok === false) throw new Error(j.error || ('Request failed (' + r.status + ')'));
+        return true;
+      } catch (e) { this.notify(e.message, true); return false; }
+      finally { this.saving = false; }
+    },
+    notify(msg, err) { this.toast = { show: true, msg, err: !!err }; clearTimeout(this._tt); this._tt = setTimeout(() => this.toast.show = false, 2800); },
+    go(v) { this.view = v; location.hash = v; this.$nextTick(() => this.renderCharts()); },
+    hotkey(e) {
+      if (e.target.matches('input,textarea,select')) return;
+      if ((e.key === 'n' || e.key === 'N') && !this.modal) { e.preventDefault(); this.openTxn(); }
+    },
+
+    // ---------- formatting ----------
+    money(v) { const n = Number(v) || 0; try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: this.currency, maximumFractionDigits: Math.abs(n) >= 10000 ? 0 : 2 }).format(n); } catch (e) { return n.toFixed(2); } },
+    pct(v) { return (isFinite(v) ? Math.round(v) : 0) + '%'; },
+    monthLabel(m) { const [y, mo] = m.split('-').map(Number); return new Date(y, mo - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }); },
+    shortMonth(m) { const [y, mo] = m.split('-').map(Number); return new Date(y, mo - 1, 1).toLocaleDateString(undefined, { month: 'short' }); },
+    dateLabel(s, long) {
+      if (!s) return '';
+      const t = todayStr(); const y = new Date(); y.setDate(y.getDate() - 1);
+      if (s === t) return 'Today'; if (s === ymd(y)) return 'Yesterday';
+      const [a, b, c] = s.split('-').map(Number);
+      return new Date(a, b - 1, c).toLocaleDateString(undefined, long ? { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric' });
+    },
+    greeting() { const h = new Date().getHours(); return (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + ' — here is your money at a glance'; },
+    initials(c) { return (c || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); },
+    catColor(c) { return CAT_COLORS[c] || '#71717a'; },
+    catBadge(t) { const c = this.catColor(t.category); return 'background:' + c + '22;color:' + c; },
+    barColor(p) { return p >= 100 ? 'bg-rose-500' : p >= 85 ? 'bg-amber-400' : 'bg-gradient-to-r from-violet-500 to-indigo-400'; },
+    ringColor(p) { return p >= 100 ? '#f43f5e' : p >= 85 ? '#fbbf24' : '#8b5cf6'; },
+    toneDot(t) { return { good: 'bg-emerald-400', warn: 'bg-amber-400', bad: 'bg-rose-400', info: 'bg-sky-400' }[t]; },
+    toneBorder(t) { return { good: 'border-l-emerald-400', warn: 'border-l-amber-400', bad: 'border-l-rose-400', info: 'border-l-sky-400' }[t]; },
+    toneText(t) { return { good: 'text-emerald-400', warn: 'text-amber-300', bad: 'text-rose-400', info: 'text-sky-400' }[t]; },
+
+    // ---------- data helpers ----------
+    get sortedTxns() { return [...this.txns].sort((a, b) => (b.txn_date || '').localeCompare(a.txn_date || '') || (b.id - a.id)); },
+    get allCategories() { return [...new Set([...this.expenseCats, ...this.incomeCats, ...this.txns.map(t => t.category)])]; },
+    monthTxns(m) { return this.txns.filter(t => (t.txn_date || '').startsWith(m)); },
+    income(m) { return this.monthTxns(m).filter(t => t.txn_type === 'income').reduce((s, t) => s + t.amount, 0); },
+    expense(m) { return this.monthTxns(m).filter(t => t.txn_type !== 'income').reduce((s, t) => s + t.amount, 0); },
+    net(m) { return this.income(m) - this.expense(m); },
+    savingsRate(m) { const i = this.income(m); return i > 0 ? (this.net(m) / i) * 100 : 0; },
+    prevMonth(m) { return this.addMonths(m, -1); },
+    addMonths(m, k) { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 + k, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); },
+    monthsBack(n, end) { const e = end || this.selectedMonth; const out = []; for (let i = n - 1; i >= 0; i--) out.push(this.addMonths(e, -i)); return out; },
+    shiftMonth(k) { this.selectedMonth = this.addMonths(this.selectedMonth, k); },
+    delta(a, b) { return b ? ((a - b) / b) * 100 : 0; },
+    deltaText(a, b) { if (!b) return 'No data for previous month'; const d = this.delta(a, b); return (d >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(d)) + '% vs last month'; },
+    get balance() { return this.txns.reduce((s, t) => s + (t.txn_type === 'income' ? t.amount : -t.amount), 0); },
+    avgSpend(n) { const ms = this.monthsBack(n, this.prevMonth(curMonth())).filter(m => this.monthTxns(m).length); if (!ms.length) return this.expense(curMonth()); return ms.reduce((s, m) => s + this.expense(m), 0) / ms.length; },
+    runway() { const a = this.avgSpend(3); if (a <= 0 || this.balance <= 0) return '—'; const mo = this.balance / a; return mo >= 24 ? '24+ mo' : mo.toFixed(1) + ' mo'; },
+    catBreakdown(m) {
+      const map = {}; this.monthTxns(m).filter(t => t.txn_type !== 'income').forEach(t => { map[t.category] = (map[t.category] || 0) + t.amount; });
+      const tot = Object.values(map).reduce((s, v) => s + v, 0) || 1;
+      return Object.entries(map).map(([name, total]) => ({ name, total, share: total / tot * 100 })).sort((a, b) => b.total - a.total);
+    },
+    catSpent(cat, m) { return this.monthTxns(m).filter(t => t.txn_type !== 'income' && t.category === cat).reduce((s, t) => s + t.amount, 0); },
+    catAvg(cat, n) { const ms = this.monthsBack(n, this.prevMonth(this.selectedMonth)); return ms.reduce((s, m) => s + this.catSpent(cat, m), 0) / n; },
+    sparkPath() {
+      const ms = this.monthsBack(8); let run = 0; const pts = [];
+      const before = this.txns.filter(t => (t.txn_date || '') < ms[0] + '-01').reduce((s, t) => s + (t.txn_type === 'income' ? t.amount : -t.amount), 0); run = before;
+      ms.forEach(m => { run += this.net(m); pts.push(run); });
+      const mn = Math.min(...pts), mx = Math.max(...pts), rg = (mx - mn) || 1;
+      return pts.map((v, i) => (i ? 'L' : 'M') + (i * 200 / (pts.length - 1)).toFixed(1) + ' ' + (72 - ((v - mn) / rg) * 60).toFixed(1)).join(' ');
+    },
+
+    // ---------- transactions view ----------
+    get filteredTxns() {
+      const q = this.f.q.trim().toLowerCase();
+      let from = '';
+      if (this.f.period === '3m') from = this.addMonths(this.selectedMonth, -2);
+      if (this.f.period === '12m') from = this.addMonths(this.selectedMonth, -11);
+      return this.sortedTxns.filter(t => {
+        if (this.f.period === 'month' && !(t.txn_date || '').startsWith(this.selectedMonth)) return false;
+        if (from && ((t.txn_date || '').slice(0, 7) < from || (t.txn_date || '').slice(0, 7) > this.selectedMonth)) return false;
+        if (this.f.type && t.txn_type !== this.f.type) return false;
+        if (this.f.cat && t.category !== this.f.cat) return false;
+        if (q && !((t.description + ' ' + (t.notes || '') + ' ' + t.category).toLowerCase().includes(q))) return false;
+        return true;
+      });
+    },
+    get filteredTotals() { const l = this.filteredTxns; const i = l.filter(t => t.txn_type === 'income').reduce((s, t) => s + t.amount, 0); const e = l.filter(t => t.txn_type !== 'income').reduce((s, t) => s + t.amount, 0); return { income: i, expense: e, net: i - e }; },
+    get groupedTxns() {
+      const g = []; let cur = null;
+      this.filteredTxns.slice(0, 400).forEach(t => { if (!cur || cur.date !== t.txn_date) { cur = { date: t.txn_date, items: [], net: 0 }; g.push(cur); } cur.items.push(t); cur.net += t.txn_type === 'income' ? t.amount : -t.amount; });
+      return g;
+    },
+    openTxn(t) {
+      this.form = t ? { ...t } : { txn_type: 'expense', amount: '', description: '', category: 'Groceries', account: 'Main account', txn_date: todayStr(), notes: '', recurring: false };
+      this.modal = 'txn';
+    },
+    async saveTxn() {
+      const d = { description: this.form.description, amount: Number(this.form.amount), txn_type: this.form.txn_type, category: this.form.category, account: this.form.account, txn_date: this.form.txn_date, notes: this.form.notes || '', recurring: !!this.form.recurring };
+      if (!(d.amount > 0)) return this.notify('Enter an amount above zero', true);
+      const ok = this.form.id ? await this.mutate('txn', 'update', d, this.form.id) : await this.mutate('txn', 'add', [d]);
+      if (ok) { this.modal = null; this.notify(this.form.id ? 'Transaction updated' : 'Transaction added'); this.selectedMonth = d.txn_date.slice(0, 7); await this.load(); }
+    },
+    async delTxn(t) {
+      if (!confirm('Delete "' + t.description + '"?')) return;
+      if (await this.mutate('txn', 'delete', {}, t.id)) { this.modal = null; this.notify('Transaction deleted'); await this.load(); }
+    },
+    exportCsv() {
+      const rows = [['date', 'description', 'amount', 'type', 'category', 'account', 'notes', 'recurring']];
+      this.filteredTxns.forEach(t => rows.push([t.txn_date, t.description, t.amount, t.txn_type, t.category, t.account, t.notes || '', t.recurring]));
+      const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'techsi-ma2-transactions.csv'; a.click();
+    },
+    parseCsv(text) {
+      const rows = []; let row = [], cell = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+        else if (c === '"') q = true; else if (c === ',') { row.push(cell); cell = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; } else cell += c;
+      }
+      if (cell || row.length) { row.push(cell); rows.push(row); }
+      return rows.filter(r => r.some(x => x.trim()));
+    },
+    async importCsv(ev) {
+      const file = ev.target.files[0]; ev.target.value = ''; if (!file) return;
+      const rows = this.parseCsv(await file.text()); if (rows.length < 2) return this.notify('CSV looks empty', true);
+      const h = rows[0].map(x => x.trim().toLowerCase());
+      const ix = (names) => h.findIndex(x => names.includes(x));
+      const iD = ix(['date', 'txn_date', 'transaction date']), iDesc = ix(['description', 'name', 'merchant', 'payee']), iA = ix(['amount', 'value']), iC = ix(['category']), iT = ix(['type', 'txn_type']);
+      if (iD < 0 || iA < 0) return this.notify('CSV needs at least date and amount columns', true);
+      const data = rows.slice(1).map(r => {
+        const raw = Number(String(r[iA] || '').replace(/[^0-9.\-]/g, ''));
+        let type = iT >= 0 ? String(r[iT]).toLowerCase().trim() : (raw < 0 ? 'expense' : 'income');
+        if (type !== 'income') type = 'expense';
+        let d = String(r[iD] || '').trim(); const p = new Date(d); if (!/^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(p)) d = ymd(p);
+        const cat = iC >= 0 && r[iC] ? r[iC].trim() : (type === 'income' ? 'Other Income' : 'Other');
+        return { txn_date: d, description: iDesc >= 0 ? r[iDesc] : 'Imported', amount: Math.abs(raw), txn_type: type, category: cat, account: 'Main account' };
+      }).filter(x => x.amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(x.txn_date));
+      if (!data.length) return this.notify('No valid rows found', true);
+      if (await this.mutate('txn', 'add', data)) { this.notify('Imported ' + data.length + ' transactions'); await this.load(); }
+    },
+
+    // ---------- budgets ----------
+    get budgetRows() {
+      const m = this.selectedMonth; const isCur = m === curMonth();
+      const [y, mo] = m.split('-').map(Number); const dim = new Date(y, mo, 0).getDate(); const day = isCur ? new Date().getDate() : dim;
+      return this.budgets.map(b => {
+        const spent = this.catSpent(b.category, m); const lim = b.monthly_limit || 0; const p = lim ? spent / lim * 100 : 0;
+        const projected = isCur ? spent / Math.max(1, day) * dim : spent; const left = lim - spent;
+        const daily = isCur && left > 0 ? left / Math.max(1, dim - day + 1) : null;
+        let status, statusClass;
+        if (p >= 100) { status = 'Over budget by ' + this.money(spent - lim) + '.'; statusClass = 'bg-rose-500/10 text-rose-200'; }
+        else if (isCur && projected > lim) { status = 'On pace to overspend by ' + this.money(projected - lim) + '. Slow down.'; statusClass = 'bg-amber-400/10 text-amber-200'; }
+        else if (p >= 85) { status = 'Almost at your limit.'; statusClass = 'bg-amber-400/10 text-amber-200'; }
+        else { status = isCur ? 'On track — ' + this.money(left) + ' left for ' + (dim - day + 1) + ' days.' : 'Finished under budget.'; statusClass = 'bg-emerald-400/10 text-emerald-200'; }
+        return { ...b, spent, pct: p, remaining: left, projected, daily, status, statusClass };
+      }).sort((a, b) => b.pct - a.pct);
+    },
+    get budgetTotals() { const l = this.budgetRows.reduce((s, b) => s + b.monthly_limit, 0); const sp = this.budgetRows.reduce((s, b) => s + b.spent, 0); return { limit: l, spent: sp, pct: l ? sp / l * 100 : 0 }; },
+    get overBudgetCount() { return this.budgetRows.filter(b => b.pct >= 100).length; },
+    get unbudgeted() { const set = new Set(this.budgets.map(b => b.category)); return this.catBreakdown(this.selectedMonth).filter(c => !set.has(c.name)); },
+    openBudget(b) { this.form = b ? { id: b.id, category: b.category, monthly_limit: b.monthly_limit } : { category: this.expenseCats.find(c => !this.budgets.some(x => x.category === c)) || 'Other', monthly_limit: '' }; this.modal = 'budget'; },
+    async saveBudget() {
+      if (await this.mutate('budget', 'upsert', [{ category: this.form.category, monthly_limit: Number(this.form.monthly_limit) }])) { this.modal = null; this.notify('Budget saved'); await this.load(); }
+    },
+    async delBudget(b) { if (!confirm('Delete the ' + b.category + ' budget?')) return; if (await this.mutate('budget', 'delete', {}, b.id)) { this.notify('Budget deleted'); await this.load(); } },
+
+    // ---------- goals ----------
+    goalPct(g) { return g.target_amount ? Math.min(100, g.saved_amount / g.target_amount * 100) : 0; },
+    goalPace(g) {
+      const left = g.target_amount - g.saved_amount; if (left <= 0) return 'Goal reached';
+      if (!g.target_date) return this.money(left) + ' to go';
+      const [y, m, d] = g.target_date.split('-').map(Number); const months = Math.max(1, (new Date(y, m - 1, d) - new Date()) / (30.44 * 864e5));
+      if (new Date(y, m - 1, d) < new Date()) return 'Past target date';
+      return this.money(left / months) + '/mo needed';
+    },
+    openGoal(g) { this.form = g ? { ...g } : { goal_name: '', target_amount: '', saved_amount: 0, target_date: '', color: '#8b5cf6' }; this.modal = 'goal'; },
+    async saveGoal() {
+      const d = { goal_name: this.form.goal_name, target_amount: Number(this.form.target_amount), saved_amount: Number(this.form.saved_amount) || 0, target_date: this.form.target_date || '', color: this.form.color };
+      const ok = this.form.id ? await this.mutate('goal', 'update', d, this.form.id) : await this.mutate('goal', 'add', [d]);
+      if (ok) { this.modal = null; this.notify('Goal saved'); await this.load(); }
+    },
+    openContrib(g) { this.form = { ...g, contrib: '' }; this.modal = 'contrib'; },
+    async saveContrib() {
+      const saved = Math.max(0, Number(this.form.saved_amount) + Number(this.form.contrib || 0));
+      const d = { goal_name: this.form.goal_name, target_amount: this.form.target_amount, saved_amount: saved, target_date: this.form.target_date || '', color: this.form.color };
+      if (await this.mutate('goal', 'update', d, this.form.id)) { this.modal = null; this.notify(saved >= this.form.target_amount ? 'Goal reached. Nicely done.' : 'Contribution added'); await this.load(); }
+    },
+    async delGoal(g) { if (!confirm('Delete goal "' + g.goal_name + '"?')) return; if (await this.mutate('goal', 'delete', {}, g.id)) { this.notify('Goal deleted'); await this.load(); } },
+
+    // ---------- insights ----------
+    get categoryChanges() {
+      const m = this.selectedMonth; const now = this.catBreakdown(m); const mx = Math.max(1, ...now.map(c => c.total));
+      return now.map(c => { const avg = this.catAvg(c.name, 3); return { name: c.name, now: c.total, avg, change: avg ? (c.total - avg) / avg * 100 : 0, bar: c.total / mx * 100 }; });
+    },
+    get recurring() {
+      const map = {};
+      this.sortedTxns.filter(t => t.txn_type !== 'income').forEach(t => {
+        const k = t.description.trim().toLowerCase(); if (!map[k]) map[k] = { name: t.description, category: t.category, amount: t.amount, months: new Set(), flagged: false };
+        map[k].months.add((t.txn_date || '').slice(0, 7)); if (t.recurring) map[k].flagged = true;
+      });
+      return Object.values(map).filter(r => r.flagged || r.months.size >= 3).filter(r => r.category !== 'Groceries' && r.category !== 'Dining' || r.flagged).sort((a, b) => b.amount - a.amount);
+    },
+    get topMerchants() {
+      const cut = new Date(); cut.setDate(cut.getDate() - 90); const c = ymd(cut); const map = {};
+      this.txns.filter(t => t.txn_type !== 'income' && t.txn_date >= c).forEach(t => { const k = t.description.trim(); map[k] = map[k] || { name: k, total: 0, count: 0 }; map[k].total += t.amount; map[k].count++; });
+      return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 6);
+    },
+    weekdayAvg() {
+      const cut = new Date(); cut.setDate(cut.getDate() - 90); const c = ymd(cut); const sums = [0, 0, 0, 0, 0, 0, 0];
+      this.txns.filter(t => t.txn_type !== 'income' && t.txn_date >= c && t.category !== 'Housing').forEach(t => { const [y, m, d] = t.txn_date.split('-').map(Number); sums[(new Date(y, m - 1, d).getDay() + 6) % 7] += t.amount; });
+      return sums.map(s => s / 13);
+    },
+    get insights() {
+      const out = []; const m = this.selectedMonth; const isCur = m === curMonth();
+      if (!this.txns.length) return [{ tone: 'info', tag: 'Getting started', title: 'Add a few transactions', body: 'Insights appear once TechSI-ma2 has some history to learn from.' }];
+      const sr = this.savingsRate(m);
+      if (this.income(m) > 0) out.push(sr >= 20 ? { tone: 'good', tag: 'Savings', title: 'You saved ' + this.pct(sr) + ' of income', body: 'That beats the 20% benchmark. Consider moving the surplus into a goal.' } : { tone: sr < 0 ? 'bad' : 'warn', tag: 'Savings', title: 'Savings rate is ' + this.pct(sr), body: sr < 0 ? 'You spent ' + this.money(-this.net(m)) + ' more than you earned this month.' : 'Aim for 20%. Trimming ' + this.money(this.income(m) * 0.2 - this.net(m)) + ' would get you there.' });
+      const up = this.categoryChanges.filter(c => c.avg > 30 && c.change > 25).sort((a, b) => (b.now - b.avg) - (a.now - a.avg))[0];
+      if (up) out.push({ tone: 'warn', tag: 'Spending spike', title: up.name + ' is up ' + Math.round(up.change) + '%', body: this.money(up.now) + ' this month vs a ' + this.money(up.avg) + ' average. That is ' + this.money(up.now - up.avg) + ' extra.' });
+      const down = this.categoryChanges.filter(c => c.avg > 30 && c.change < -20).sort((a, b) => a.change - b.change)[0];
+      if (down) out.push({ tone: 'good', tag: 'Win', title: down.name + ' down ' + Math.abs(Math.round(down.change)) + '%', body: 'You spent ' + this.money(down.avg - down.now) + ' less than usual. Keep it up.' });
+      const risky = this.budgetRows.filter(b => b.pct < 100 && isCur && b.projected > b.monthly_limit)[0];
+      if (risky) out.push({ tone: 'warn', tag: 'Budget', title: risky.category + ' will likely run over', body: 'Projected ' + this.money(risky.projected) + ' vs a ' + this.money(risky.monthly_limit) + ' limit. Keep to ' + this.money(risky.daily || 0) + '/day.' });
+      const over = this.budgetRows.filter(b => b.pct >= 100);
+      if (over.length) out.push({ tone: 'bad', tag: 'Budget', title: over.length + ' budget' + (over.length > 1 ? 's' : '') + ' exceeded', body: over.map(b => b.category).join(', ') + '. Review these categories first.' });
+      const subs = this.recurring.reduce((s, r) => s + r.amount, 0);
+      if (subs > 0) out.push({ tone: 'info', tag: 'Recurring', title: this.money(subs) + '/mo in recurring charges', body: 'That is ' + this.money(subs * 12) + ' a year across ' + this.recurring.length + ' items. Cancel what you no longer use.' });
+      const big = this.monthTxns(m).filter(t => t.txn_type !== 'income' && t.category !== 'Housing').sort((a, b) => b.amount - a.amount)[0];
+      if (big) out.push({ tone: 'info', tag: 'Largest purchase', title: big.description + ' · ' + this.money(big.amount), body: 'Your biggest non-housing expense in ' + this.monthLabel(m) + ' (' + big.category + ').' });
+      const wd = this.weekdayAvg(); const names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; const mxI = wd.indexOf(Math.max(...wd));
+      if (wd[mxI] > 0) out.push({ tone: 'info', tag: 'Habits', title: names[mxI] + 's are your priciest day', body: 'You average ' + this.money(wd[mxI]) + ' on ' + names[mxI] + 's. Plan those days ahead.' });
+      const r = this.runway(); if (r !== '—') out.push({ tone: parseFloat(r) >= 6 ? 'good' : 'warn', tag: 'Safety net', title: r + ' of runway', body: parseFloat(r) >= 6 ? 'Your balance covers 6+ months of typical spending.' : 'Build toward 6 months of expenses (' + this.money(this.avgSpend(3) * 6) + ').' });
+      return out;
+    },
+
+    // ---------- charts ----------
+    renderCharts() {
+      if (typeof Chart === 'undefined' || this.loading) return;
+      Chart.defaults.color = '#71717a'; Chart.defaults.font.family = 'Inter'; Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+      const fmt = (v) => this.money(v);
+      const tooltip = { backgroundColor: 'rgba(18,18,26,0.95)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 10, callbacks: { label: (c) => ' ' + (c.dataset.label ? c.dataset.label + ': ' : '') + fmt(c.parsed.y ?? c.parsed) } };
+      const make = (id, cfg) => { const el = document.getElementById(id); if (!el || !el.offsetParent) return; if (charts[id]) charts[id].destroy(); charts[id] = new Chart(el, cfg); };
+      if (this.view === 'overview' && this.txns.length) {
+        const ms = this.monthsBack(6);
+        const ctx = document.getElementById('cashflowChart')?.getContext('2d');
+        let grad = '#8b5cf6'; if (ctx) { grad = ctx.createLinearGradient(0, 0, 0, 280); grad.addColorStop(0, '#8b5cf6'); grad.addColorStop(1, '#6366f155'); }
+        make('cashflowChart', { type: 'bar', data: { labels: ms.map(m => this.shortMonth(m)), datasets: [
+          { label: 'Income', data: ms.map(m => this.income(m)), backgroundColor: '#34d399', borderRadius: 8, barPercentage: 0.7, categoryPercentage: 0.6 },
+          { label: 'Spending', data: ms.map(m => this.expense(m)), backgroundColor: grad, borderRadius: 8, barPercentage: 0.7, categoryPercentage: 0.6 } ] },
+          options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip }, scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => fmt(v) }, border: { display: false } } } } });
+        const cb = this.catBreakdown(this.selectedMonth);
+        make('donutChart', { type: 'doughnut', data: { labels: cb.map(c => c.name), datasets: [{ data: cb.map(c => c.total), backgroundColor: cb.map(c => this.catColor(c.name)), borderWidth: 0, spacing: 2, borderRadius: 4 }] },
+          options: { maintainAspectRatio: false, cutout: '76%', plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: (c) => ' ' + c.label + ': ' + fmt(c.parsed) } } } } });
+      }
+      if (this.view === 'insights') {
+        const ms = this.monthsBack(12);
+        const nets = ms.map(m => this.net(m));
+        make('trendChart', { type: 'line', data: { labels: ms.map(m => this.shortMonth(m)), datasets: [{ label: 'Net', data: nets, borderColor: '#a78bfa', backgroundColor: 'rgba(139,92,246,0.12)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: nets.map(v => v >= 0 ? '#34d399' : '#f43f5e') }] },
+          options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip }, scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => fmt(v) }, border: { display: false } } } } });
+        const wd = this.weekdayAvg(); const mx = Math.max(...wd);
+        make('weekdayChart', { type: 'bar', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Avg', data: wd, backgroundColor: wd.map(v => v === mx ? '#f97316' : 'rgba(139,92,246,0.55)'), borderRadius: 6 }] },
+          options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip }, scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => fmt(v) }, border: { display: false } } } } });
+      }
+    },
+
+    // ---------- demo & reset ----------
+    async seedDemo() {
+      const data = []; const now = new Date(); let seed = 42; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      const between = (a, b) => Math.round((a + rnd() * (b - a)) * 100) / 100; const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+      const add = (d, desc, amt, type, cat, extra) => { if (d > now) return; data.push({ txn_date: ymd(d), description: desc, amount: amt, txn_type: type, category: cat, account: (extra && extra.account) || (type === 'income' ? 'Main account' : pick(['Main account', 'Credit card', 'Credit card'])), recurring: !!(extra && extra.recurring), notes: '' }); };
+      for (let k = 5; k >= 0; k--) {
+        const y = now.getFullYear(), mo = now.getMonth() - k; const D = (day) => new Date(y, mo, day);
+        add(D(1), 'Acme Corp Payroll', 3250, 'income', 'Salary', { recurring: true }); add(D(15), 'Acme Corp Payroll', 3250, 'income', 'Salary', { recurring: true });
+        if (rnd() > 0.35) add(D(Math.ceil(between(5, 26))), pick(['Upwork client', 'Design retainer', 'Consulting invoice']), between(400, 1600), 'income', 'Freelance');
+        if (k % 3 === 0) add(D(20), 'Vanguard dividend', between(80, 160), 'income', 'Investments');
+        add(D(1), 'Rent — Maple Street', 1850, 'expense', 'Housing', { recurring: true, account: 'Main account' });
+        add(D(3), 'Netflix', 15.49, 'expense', 'Subscriptions', { recurring: true }); add(D(7), 'Spotify', 11.99, 'expense', 'Subscriptions', { recurring: true });
+        add(D(12), 'iCloud+', 2.99, 'expense', 'Subscriptions', { recurring: true }); add(D(5), 'Equinox Gym', 45, 'expense', 'Health', { recurring: true });
+        add(D(18), 'Con Edison', between(85, 140), 'expense', 'Utilities', { recurring: true }); add(D(22), 'Verizon Wireless', 65, 'expense', 'Utilities', { recurring: true }); add(D(10), 'Xfinity Internet', 70, 'expense', 'Utilities', { recurring: true });
+        for (let w = 0; w < 5; w++) add(D(2 + w * 6 + Math.floor(rnd() * 3)), pick(['Whole Foods', 'Trader Joe\'s', 'Costco', 'Safeway']), between(55, 165), 'expense', 'Groceries');
+        const dn = 6 + Math.floor(rnd() * 6); for (let i = 0; i < dn; i++) add(D(1 + Math.floor(rnd() * 28)), pick(['Sweetgreen', 'Blue Bottle Coffee', 'Shake Shack', 'Nobu', 'Chipotle', 'Local Bistro', 'Uber Eats']), between(9, k === 0 ? 95 : 70), 'expense', 'Dining');
+        const tr = 5 + Math.floor(rnd() * 5); for (let i = 0; i < tr; i++) add(D(1 + Math.floor(rnd() * 28)), pick(['Uber', 'Lyft', 'Shell Gas', 'MTA MetroCard']), between(12, 55), 'expense', 'Transport');
+        const sh = 2 + Math.floor(rnd() * 4); for (let i = 0; i < sh; i++) add(D(1 + Math.floor(rnd() * 28)), pick(['Amazon', 'Uniqlo', 'Apple Store', 'Target', 'IKEA']), between(20, 220), 'expense', 'Shopping');
+        const en = 1 + Math.floor(rnd() * 3); for (let i = 0; i < en; i++) add(D(1 + Math.floor(rnd() * 28)), pick(['AMC Theatres', 'Ticketmaster', 'Steam', 'Bowling Night']), between(15, 120), 'expense', 'Entertainment');
+        if (rnd() > 0.5) add(D(1 + Math.floor(rnd() * 28)), pick(['CVS Pharmacy', 'Dental checkup']), between(15, 180), 'expense', 'Health');
+        if (rnd() > 0.6) add(D(1 + Math.floor(rnd() * 28)), pick(['Barber', 'Sephora']), between(25, 90), 'expense', 'Personal Care');
+        if (k === 2) { add(D(9), 'Delta Air Lines', 486.4, 'expense', 'Travel'); add(D(14), 'Airbnb — Lisbon', 742, 'expense', 'Travel'); }
+        if (k === 4) add(D(16), 'Coursera Plus', 59, 'expense', 'Education');
+      }
+      const ok1 = await this.mutate('txn', 'add', data);
+      const ok2 = ok1 && await this.mutate('budget', 'upsert', [['Groceries', 600], ['Dining', 350], ['Shopping', 300], ['Transport', 220], ['Entertainment', 150], ['Subscriptions', 40], ['Utilities', 300]].map(([category, monthly_limit]) => ({ category, monthly_limit })));
+      const ok3 = ok2 && (this.goals.length > 0 || await this.mutate('goal', 'add', [
+        { goal_name: 'Emergency fund', target_amount: 15000, saved_amount: 8200, target_date: (now.getFullYear() + 1) + '-06-30', color: '#10b981' },
+        { goal_name: 'Japan trip', target_amount: 6000, saved_amount: 2350, target_date: (now.getFullYear() + 1) + '-04-01', color: '#ec4899' },
+        { goal_name: 'New laptop', target_amount: 2500, saved_amount: 1800, target_date: '', color: '#0ea5e9' } ]));
+      if (ok3) { this.notify('Sample data loaded: ' + data.length + ' transactions'); this.selectedMonth = curMonth(); this.go('overview'); await this.load(); }
+    },
+    async clearAll() {
+      if (!confirm('Delete ALL transactions permanently? This cannot be undone.')) return;
+      if (await this.mutate('txn', 'clear', {})) { this.notify('All transactions deleted'); await this.load(); }
+    },
+  };
+}
+</script>
 </body>
 </html>
